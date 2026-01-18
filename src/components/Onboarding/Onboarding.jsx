@@ -13,7 +13,7 @@ const Onboarding = () => {
   const [authMode, setAuthMode] = useState("signup");
 
   return (
-    <div className="w-full h-full flex flex-col items-center p-10 bg-[url('./assets/background.svg')] bg-cover">
+    <div className="w-full min-h-screen flex flex-col items-center p-10 bg-[url('./assets/background.svg')] bg-cover">
       <img src={Logo} alt="Floop" className="w-28 h-28" />
       <div className="w-100 h-150 flex flex-col bg-white rounded-2xl border border-border p-5 shadow-lg">
         <span className="w-full h-max flex justify-between">
