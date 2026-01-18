@@ -5,6 +5,8 @@ import Copy from "@/assets/copy_white.svg";
 import axios from "axios";
 import { api } from "@/api";
 import { useState } from "react";
+import { useNavigate } from "react-router";
+import { BASE_URL_CLIENT } from "@/config";
 
 // components
 import {
@@ -40,6 +42,9 @@ const ShareYourPortfolio = ({
   formData,
   setFormData,
 }) => {
+  // hooks
+  const navigate = useNavigate();
+
   // states
   const [loading, setLoading] = useState(false);
 
@@ -53,6 +58,11 @@ const ShareYourPortfolio = ({
         reviewId: formData.reviewId,
         accessType: formData.accessType,
       });
+      await navigator.clipboard.writeText(
+        `${BASE_URL_CLIENT}/${formData.reviewAccessToken}`,
+      );
+      toast.success("Link copied to clipboard");
+      navigate("/dashboard");
     } catch (err) {
       console.log("Access type updating failed", err);
       if (axios.isAxiosError(err)) {

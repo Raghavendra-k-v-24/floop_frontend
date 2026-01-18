@@ -56,10 +56,12 @@ const FloopYourWebsite = ({ formData, setFormData, setCurrentStep }) => {
 
       const review = createReviewResponse.data.review;
       const reviewId = review._id;
+      const accessToken = review.accessToken;
 
       setFormData((prev) => ({
         ...prev,
         reviewId: reviewId,
+        reviewAccessToken: accessToken,
       }));
 
       setCurrentStep("floop_your_website_goals");

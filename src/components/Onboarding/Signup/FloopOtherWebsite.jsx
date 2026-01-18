@@ -9,9 +9,13 @@ import { ArrowLeft } from "lucide-react";
 import CustomInput from "../../common/CustomInput";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
+import { useNavigate } from "react-router";
 
 const FloopOtherWebsite = ({ formData, setFormData, setCurrentStep }) => {
-  //states
+  // hooks
+  const navigate = useNavigate();
+
+  // states
   const [loading, setLoading] = useState(false);
 
   // functions
@@ -61,6 +65,7 @@ const FloopOtherWebsite = ({ formData, setFormData, setCurrentStep }) => {
         ...prev,
         reviewId: reviewId,
       }));
+      navigate("/dashboard");
     } catch (err) {
       console.log("Portfolio or review creating failed", err);
       if (axios.isAxiosError(err)) {

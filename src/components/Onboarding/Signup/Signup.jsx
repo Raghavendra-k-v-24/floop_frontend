@@ -36,6 +36,7 @@ const Signup = () => {
     revieweeEmail: "",
     portfolioLink: "",
     reviewId: null,
+    reviewAccessToken: null,
   });
 
   const [currentStep, setCurrentStep] = useState("user_details");

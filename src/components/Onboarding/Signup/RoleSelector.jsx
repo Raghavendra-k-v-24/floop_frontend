@@ -2,6 +2,7 @@
 import axios from "axios";
 import { api } from "@/api";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 
 // components
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,9 @@ import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 
 const RoleSelector = ({ setFormData, setCurrentStep }) => {
+  // hooks
+  const navigate = useNavigate();
+
   // states
   const [loading, setLoading] = useState(false);
 
@@ -24,7 +28,10 @@ const RoleSelector = ({ setFormData, setCurrentStep }) => {
           ? "reviewer"
           : "";
 
-    if (role === "") return;
+    if (role === "") {
+      navigate("/dashboard");
+      return;
+    }
 
     setLoading(true);
     try {
