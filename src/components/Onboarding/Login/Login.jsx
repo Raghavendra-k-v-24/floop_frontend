@@ -58,9 +58,9 @@ const Login = () => {
       localStorage.setItem("auth_token", token);
       navigate("/dashboard");
     } catch (err) {
-      console.log("Signing up failed", err);
+      console.log("Login failed", err);
       if (axios.isAxiosError(err)) {
-        const message = err.response?.data?.message || "Signup failed";
+        const message = err.response?.data?.message || "Login failed";
         toast.error(message);
       } else {
         toast.error("Unexpected error occurred");
