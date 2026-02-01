@@ -11,7 +11,7 @@ const Dashboard = () => {
     return localStorage.getItem("activeTab") || "received";
   });
   return (
-    <div className="w-full min-h-screen flex flex-col">
+    <div className="w-full h-screen flex flex-col overflow-hidden">
       <Header activeTab={activeTab} setActiveTab={setActiveTab} />
       <Body activeTab={activeTab} />
     </div>

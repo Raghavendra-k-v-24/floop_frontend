@@ -15,7 +15,7 @@ import { Outlet } from "react-router";
 
 const App = () => {
   return (
-    <div className="w-full h-screen overflow-auto">
+    <div className="w-full h-screen">
       <Outlet />
       <Toaster position="bottom-right" richColors />
     </div>

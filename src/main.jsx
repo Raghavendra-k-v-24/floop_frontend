@@ -12,6 +12,7 @@ import "./index.css";
 import App from "./App.jsx";
 import Onboarding from "@/components/Onboarding/Onboarding.jsx";
 import Dashboard from "@/components/Dashboard/Dashboard.jsx";
+import Review from "./components/Review/Review.jsx";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("auth_token");
@@ -75,6 +76,10 @@ const router = createBrowserRouter([
             <Dashboard />
           </ProtectedRoute>
         ),
+      },
+      {
+        path: "review/:id",
+        element: <Review />,
       },
     ],
   },

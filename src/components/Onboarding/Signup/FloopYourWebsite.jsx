@@ -51,6 +51,7 @@ const FloopYourWebsite = ({ formData, setFormData, setCurrentStep }) => {
       const createReviewResponse = await api.post("/api/review", {
         portfolioId: portfolioId,
         reviewerEmail: formData.reviewerEmail,
+        reviewerName: formData.reviewerName,
         intent: "reviewee",
       });
 
