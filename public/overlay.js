@@ -1,68 +1,150 @@
 (() => {
-  const { reviewId, token } = window.__FLOOP__;
+  const { reviewId, apiBase } = window.__FLOOP__;
+
   let commentMode = false;
+  let pinsCache = [];
 
-  window.addEventListener("message", (event) => {
-    if (!event.data || event.data.type !== "FLOOP_TOGGLE_COMMENT_MODE") return;
+  //////////////////////////////////////////////////////
+  // ROOT LAYERS
+  //////////////////////////////////////////////////////
 
-    commentMode = Boolean(event.data.enabled);
-
-    // Optional UX feedback
-    document.body.style.cursor = commentMode ? "crosshair" : "default";
-
-    // Close any open comment box when toggled
-    removeCommentBox();
+  const pinLayer = document.createElement("div");
+  Object.assign(pinLayer.style, {
+    position: "fixed",
+    inset: "0",
+    zIndex: "999998",
+    pointerEvents: "none",
   });
 
-  // 🔹 Load existing pins
-  fetch(`/api/pin?reviewId=${reviewId}`)
-    .then((res) => res.json())
-    .then((pins) => pins.forEach(renderSinglePin))
-    .catch((err) => console.error("Load pins failed", err));
+  const uiLayer = document.createElement("div");
+  Object.assign(uiLayer.style, {
+    position: "fixed",
+    inset: "0",
+    zIndex: "999999",
+    pointerEvents: "none",
+  });
 
-  // 🔹 Capture click
-  document.addEventListener(
-    "click",
-    (e) => {
-      if (
-        !e.target.closest(".floop-comment-box") &&
-        !e.target.closest(".floop-pin")
-      ) {
-        removeCommentBox();
-      }
+  document.body.append(pinLayer, uiLayer);
 
-      if (!commentMode) return;
-      if (e.target.closest(".floop-comment-box")) return;
-      if (e.target.closest(".floop-pin")) return;
+  //////////////////////////////////////////////////////
+  // COMMENT MODE
+  //////////////////////////////////////////////////////
 
-      e.preventDefault();
-      e.stopPropagation();
+  window.addEventListener("message", (e) => {
+    if (e.data?.type !== "FLOOP_TOGGLE_COMMENT_MODE") return;
 
-      showCommentBox(e.pageX, e.pageY);
-    },
-    true,
-  );
+    commentMode = !!e.data.enabled;
+    document.body.style.cursor = commentMode ? "crosshair" : "default";
 
-  function showCommentBox(x, y) {
-    removeCommentBox();
+    removeUI();
+  });
 
-    // Host element
+  //////////////////////////////////////////////////////
+  // LOAD PINS
+  //////////////////////////////////////////////////////
+
+  fetch(`${apiBase}/api/pin?reviewId=${reviewId}`)
+    .then((r) => r.json())
+    .then((pins) => {
+      pinsCache = pins;
+      rerenderPins();
+    });
+
+  //////////////////////////////////////////////////////
+  // CLICK HANDLER
+  //////////////////////////////////////////////////////
+
+  document.addEventListener("mousedown", (e) => {
+    const path = e.composedPath();
+
+    if (path.some((el) => el?.classList?.contains("floop-ui"))) return;
+
+    removeUI();
+
+    if (!commentMode) return;
+
+    const anchor = findAnchor(e.target);
+
+    openCommentBox(e.clientX, e.clientY, anchor);
+  });
+
+  //////////////////////////////////////////////////////
+  // FIND STABLE ANCHOR
+  //////////////////////////////////////////////////////
+
+  function findAnchor(el) {
+    while (el && el !== document.body) {
+      if (el.id) return el;
+
+      if (el.dataset && Object.keys(el.dataset).length) return el;
+
+      if (el.getAttribute("role")) return el;
+
+      if (["BUTTON", "A", "H1", "H2", "H3", "IMG"].includes(el.tagName))
+        return el;
+
+      el = el.parentElement;
+    }
+
+    return document.body;
+  }
+
+  //////////////////////////////////////////////////////
+  // SAFE SELECTOR
+  //////////////////////////////////////////////////////
+
+  function buildSelector(el) {
+    if (el.id) return `#${CSS.escape(el.id)}`;
+
+    if (el.classList.length)
+      return `${el.tagName.toLowerCase()}.${CSS.escape(el.classList[0])}`;
+
+    return el.tagName.toLowerCase();
+  }
+
+  //////////////////////////////////////////////////////
+  // TEXT FINGERPRINT
+  //////////////////////////////////////////////////////
+
+  function getTextHint(el) {
+    const text = el.innerText || el.alt || el.title || "";
+
+    return text.trim().replace(/\s+/g, " ").slice(0, 120);
+  }
+
+  //////////////////////////////////////////////////////
+  // COMMENT BOX
+  //////////////////////////////////////////////////////
+
+  function openCommentBox(x, y, anchor) {
+    removeUI();
+
+    const selector = buildSelector(anchor);
+    const textHint = getTextHint(anchor);
+    const tagName = anchor.tagName.toLowerCase();
+
+    const rect = anchor.getBoundingClientRect();
+
+    const offsetX = (x - rect.left) / rect.width;
+    const offsetY = (y - rect.top) / rect.height;
+
     const host = document.createElement("div");
-    host.className = "floop-comment-box";
-    host.style.position = "absolute";
+    host.className = "floop-ui";
+    host.style.position = "fixed";
     host.style.left = `${x}px`;
     host.style.top = `${y}px`;
     host.style.zIndex = "1000000";
+    host.style.pointerEvents = "auto";
 
-    // Prevent overflow
+    // Prevent overflow EXACTLY like your old script
     if (x + 320 > window.innerWidth) host.style.left = `${x - 320}px`;
     if (y + 260 > window.innerHeight) host.style.top = `${y - 260}px`;
 
-    document.body.appendChild(host);
+    uiLayer.appendChild(host);
 
-    // Shadow root
     const shadow = host.attachShadow({ mode: "open" });
 
+    // 🔥 YOUR UI — ZERO CHANGES
     shadow.innerHTML = `
     <style>
       :host { all: initial; }
@@ -135,6 +217,9 @@
     </div>
   `;
 
+    // 🔥 CRITICAL — stop event leak (fixes typing bug forever)
+    shadow.addEventListener("mousedown", (e) => e.stopPropagation());
+
     const textarea = shadow.querySelector("textarea");
     const submit = shadow.querySelector(".submit");
     const cancel = shadow.querySelector(".cancel");
@@ -144,14 +229,21 @@
     cancel.onclick = () => host.remove();
 
     submit.onclick = () => {
-      const text = textarea.value.trim();
-      if (!text) return;
+      const comment = textarea.value.trim();
+      if (!comment) return;
 
-      savePin(x, y, text);
+      savePin({
+        selector,
+        textHint,
+        tagName,
+        offsetX,
+        offsetY,
+        comment,
+      });
+
       host.remove();
     };
 
-    // Enter = submit, Shift+Enter = newline
     textarea.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -160,99 +252,231 @@
     });
   }
 
-  function savePin(clickX, clickY, comment) {
-    const x = clickX / window.innerWidth;
-    const y = clickY / window.innerHeight;
+  //////////////////////////////////////////////////////
+  // SAVE PIN
+  //////////////////////////////////////////////////////
 
-    fetch("/api/pin", {
+  function savePin(data) {
+    fetch(`${apiBase}/api/pin`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         reviewId,
+        selector: data.selector,
+        textHint: data.textHint,
+        tagName: data.tagName,
+        x: data.offsetX,
+        y: data.offsetY,
+        comment: data.comment,
         pageUrl: location.pathname,
-        x,
-        y,
-        comment,
       }),
     })
-      .then(async (res) => {
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(text);
-        }
-        return res.json();
-      })
+      .then((r) => r.json())
       .then(({ pin }) => {
-        pin.comment = comment;
-        renderSinglePin(pin); // ✅ instant render
-      })
-      .catch((err) => {
-        console.error("Save pin failed:", err);
-        alert("Failed to save comment");
+        pin.comment = data.comment;
+        pinsCache.push(pin);
+        renderPin(pin);
       });
   }
 
-  function renderSinglePin(pin) {
-    if (document.querySelector(`[data-pin-id="${pin._id}"]`)) return;
+  //////////////////////////////////////////////////////
+  // SMART RESOLVER (THE MAGIC)
+  //////////////////////////////////////////////////////
 
-    const PIN_ICON_URL = `${window.location.origin}/pin.svg`;
-    const el = document.createElement("img");
-    el.dataset.pinId = pin._id;
-    el.className = "floop-pin";
-    el.src = PIN_ICON_URL;
-    el.alt = "Pin";
+  function resolveAnchor(pin) {
+    // 1️⃣ selector
+    let el = document.querySelector(pin.selector);
+    if (el) return el;
 
-    el.style.cssText = `
-  position:absolute;
-  left:${pin.position.x * window.innerWidth}px;
-  top:${pin.position.y * window.innerHeight}px;
-  width:32px;
-  height:32px;
-  cursor:pointer;
-  z-index:999999;
-  transform: translate(-50%, -100%);
-`;
+    // 2️⃣ text fingerprint
+    if (pin.textHint) {
+      const candidates = [...document.querySelectorAll(pin.tagName)];
 
-    // 🔑 attach comment data
-    el.dataset.comment = pin.comment;
-
-    el.addEventListener("click", (e) => {
-      e.stopPropagation();
-      showCommentPreview(
-        pin.position.x * window.innerWidth,
-        pin.position.y * window.innerHeight,
-        el.dataset.comment,
+      const match = candidates.find((c) =>
+        c.innerText?.includes(pin.textHint.slice(0, 20)),
       );
-    });
 
-    document.body.appendChild(el);
+      if (match) return match;
+    }
+
+    return null;
   }
 
-  function showCommentPreview(x, y, comment) {
-    removeCommentBox();
+  //////////////////////////////////////////////////////
+  // RENDER
+  //////////////////////////////////////////////////////
 
-    // Host element
+  function rerenderPins() {
+    pinLayer.innerHTML = "";
+    pinsCache.forEach(renderPin);
+  }
+
+  // function renderPin(pin) {
+  //   const target = resolveAnchor(pin);
+  //   if (!target) return;
+
+  //   const rect = target.getBoundingClientRect();
+
+  //   const left = rect.left + rect.width * pin.position.x;
+  //   const top = rect.top + rect.height * pin.position.y;
+
+  //   const el = document.createElement("img");
+  //   el.src = `${window.location.origin}/pin.svg`;
+
+  //   Object.assign(el.style, {
+  //     position: "fixed",
+  //     left: `${left}px`,
+  //     top: `${top}px`,
+  //     width: "26px",
+  //     transform: "translate(-50%,-100%)",
+  //     cursor: "pointer",
+  //     pointerEvents: "auto",
+  //   });
+
+  //   el.onmouseenter = () => showPreview(left, top, pin.comment);
+
+  //   pinLayer.appendChild(el);
+  // }
+
+  //////////////////////////////////////////////////////
+  // PREVIEW
+  //////////////////////////////////////////////////////
+
+  // function showPreview(x, y, comment) {
+  //   removeUI();
+
+  //   const host = document.createElement("div");
+  //   host.className = "floop-ui";
+
+  //   Object.assign(host.style, {
+  //     position: "fixed",
+  //     left: `${x}px`,
+  //     top: `${y + 24}px`,
+  //     pointerEvents: "auto",
+  //   });
+
+  //   const shadow = host.attachShadow({ mode: "open" });
+
+  //   shadow.innerHTML = `
+  //     <style>
+  //     :host {
+  //       all: initial;
+  //     }
+
+  //     .card {
+  //       font-family: Inter, Arial, sans-serif;
+  //       background: white;
+  //       width: 300px;
+  //       border: 2px solid #EBEFF4;
+  //       border-radius: 12px;
+  //       padding: 12px;
+  //       display: flex;
+  //       flex-direction: column;
+  //       gap: 8px;
+  //       box-sizing: border-box;
+
+  //       opacity: 0;
+  //       transform: translateY(8px) scale(0.96);
+  //       animation: floopFadeIn 160ms ease-out forwards;
+
+  //       will-change: transform, opacity;
+  //     }
+
+  //     @keyframes floopFadeIn {
+  //       to {
+  //         opacity: 1;
+  //         transform: translateY(0) scale(1);
+  //       }
+  //     }
+
+  //     .header {
+  //       font-weight: 600;
+  //       font-size: 14px;
+  //     }
+
+  //     .body {
+  //       border: 2px solid #EBEFF4;
+  //       border-radius: 12px;
+  //       background: #F9FAFB;
+  //       padding: 12px;
+  //       font-size: 13px;
+  //       line-height: 1.4;
+  //       text-align: justify;
+  //       color: #111;
+  //       word-break: break-word;
+  //     }
+  //   </style>
+
+  //   <div class="card">
+  //     <div class="header">Feedback</div>
+  //     <div class="body"></div>
+  //   </div>
+  // `;
+
+  //   uiLayer.appendChild(host);
+  // }
+
+  function renderPin(pin) {
+    const target = resolveAnchor(pin);
+    if (!target) return;
+
+    const rect = target.getBoundingClientRect();
+
+    const left = rect.left + rect.width * pin.position.x;
+    const top = rect.top + rect.height * pin.position.y;
+
+    const el = document.createElement("img");
+    el.src = `${window.location.origin}/pin.svg`;
+
+    Object.assign(el.style, {
+      position: "fixed",
+      left: `${left}px`,
+      top: `${top}px`,
+      width: "26px",
+      transform: "translate(-50%,-100%)",
+      cursor: "pointer",
+      pointerEvents: "auto",
+    });
+
+    let hoverTimeout;
+
+    el.addEventListener("mouseenter", () => {
+      clearTimeout(hoverTimeout);
+
+      showPreview(left, top, pin.comment, el);
+    });
+
+    el.addEventListener("mouseleave", () => {
+      hoverTimeout = setTimeout(() => {
+        // check if mouse entered preview
+        if (!document.querySelector(":hover")?.closest(".floop-ui")) {
+          removeUI();
+        }
+      }, 120); // tiny delay = smooth UX
+    });
+
+    pinLayer.appendChild(el);
+  }
+
+  function showPreview(x, y, comment, pinEl) {
+    removeUI();
+
     const host = document.createElement("div");
-    host.className = "floop-comment-box";
-    host.style.position = "absolute";
+    host.className = "floop-ui";
+    host.style.position = "fixed";
     host.style.left = `${x}px`;
     host.style.top = `${y}px`;
     host.style.zIndex = "1000000";
+    host.style.pointerEvents = "auto";
 
-    // Prevent overflow
     if (x + 320 > window.innerWidth) host.style.left = `${x - 320}px`;
     if (y + 260 > window.innerHeight) host.style.top = `${y - 260}px`;
 
-    document.body.appendChild(host);
-
-    // Shadow root
     const shadow = host.attachShadow({ mode: "open" });
 
     shadow.innerHTML = `
     <style>
-      :host {
-        all: initial;
-      }
+      :host { all: initial; }
 
       .card {
         font-family: Inter, Arial, sans-serif;
@@ -265,6 +489,18 @@
         flex-direction: column;
         gap: 8px;
         box-sizing: border-box;
+
+        opacity: 0;
+        transform: translateY(8px) scale(0.96);
+        animation: floopFadeIn 160ms ease-out forwards;
+        will-change: transform, opacity;
+      }
+
+      @keyframes floopFadeIn {
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
       }
 
       .header {
@@ -291,14 +527,46 @@
     </div>
   `;
 
-    // Safe text insertion
     shadow.querySelector(".body").textContent =
       comment || "No feedback provided";
+
+    uiLayer.appendChild(host);
+
+    let hoverTimeout;
+
+    host.addEventListener("mouseenter", () => {
+      clearTimeout(hoverTimeout);
+    });
+
+    host.addEventListener("mouseleave", () => {
+      hoverTimeout = setTimeout(() => {
+        // if cursor is not back on pin
+        if (!pinEl.matches(":hover")) {
+          removeUI();
+        }
+      }, 120);
+    });
   }
 
-  function removeCommentBox() {
-    document
-      .querySelectorAll(".floop-comment-box")
-      .forEach((el) => el.remove());
+  //////////////////////////////////////////////////////
+  // CLEAN
+  //////////////////////////////////////////////////////
+
+  function removeUI() {
+    uiLayer.innerHTML = "";
   }
+
+  //////////////////////////////////////////////////////
+  // AUTO REFLOW
+  //////////////////////////////////////////////////////
+
+  let timer;
+
+  function reflow() {
+    clearTimeout(timer);
+    timer = setTimeout(rerenderPins, 120);
+  }
+
+  window.addEventListener("scroll", reflow, true);
+  window.addEventListener("resize", reflow);
 })();

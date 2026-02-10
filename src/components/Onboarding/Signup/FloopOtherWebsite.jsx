@@ -2,6 +2,7 @@
 import axios from "axios";
 import { api } from "@/api";
 import { useState } from "react";
+import { useLocation, useNavigate, useOutletContext } from "react-router";
 
 // components
 import { Button } from "@/components/ui/button";
@@ -9,11 +10,12 @@ import { ArrowLeft } from "lucide-react";
 import CustomInput from "../../common/CustomInput";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
-import { useNavigate } from "react-router";
 
-const FloopOtherWebsite = ({ formData, setFormData, setCurrentStep }) => {
+const FloopOtherWebsite = () => {
   // hooks
   const navigate = useNavigate();
+  const location = useLocation();
+  const { formData, setFormData } = useOutletContext();
 
   // states
   const [loading, setLoading] = useState(false);
@@ -25,6 +27,14 @@ const FloopOtherWebsite = ({ formData, setFormData, setCurrentStep }) => {
       ...prev,
       [id]: value,
     }));
+  };
+
+  const handleBack = () => {
+    if (location.state?.from) {
+      navigate(location.state.from);
+    } else {
+      navigate("/setup/role-selector");
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -87,7 +97,7 @@ const FloopOtherWebsite = ({ formData, setFormData, setCurrentStep }) => {
       <Button
         className="w-max bg-background text-black rounded-full py-5 cursor-pointer text-xs flex justify-between border border-border mr-auto hover:bg-foreground/50"
         type="button"
-        onClick={() => setCurrentStep("role_selector")}
+        onClick={handleBack}
       >
         <span className="w-4 h-4 rounded-full bg-foreground flex items-center justify-center ">
           <ArrowLeft className="w-3! h-3!" strokeWidth={2} />

@@ -1,5 +1,6 @@
 //hooks
 import { useState } from "react";
+import { Outlet } from "react-router";
 
 // components
 import UserDetails from "./UserDetails";
@@ -41,15 +42,9 @@ const Signup = () => {
 
   const [currentStep, setCurrentStep] = useState("user_details");
 
-  const StepComponent = STEPS[currentStep];
-
   return (
     <div className="w-full flex-1">
-      <StepComponent
-        formData={formData}
-        setFormData={setFormData}
-        setCurrentStep={setCurrentStep}
-      />
+      <Outlet context={{ formData, setFormData }} />
     </div>
   );
 };

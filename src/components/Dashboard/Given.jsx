@@ -2,6 +2,8 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { useEffect } from "react";
+import { api } from "@/api";
+import { useNavigate } from "react-router";
 
 // components
 import { Separator } from "@/components/ui/separator";
@@ -11,6 +13,8 @@ import Card from "./Card";
 import Sidebar from "./Sidebar/Sidebar";
 
 const Given = () => {
+  //hooks
+  const navigate = useNavigate();
   // states
   const [allReviews, setallReviews] = useState([]);
   const latestReviews = allReviews.slice(0, 5);
@@ -32,6 +36,11 @@ const Given = () => {
           <Button
             className="w-50 h-10 text-xs text-white rounded-full cursor-pointer bg-[radial-gradient(circle_at_bottom_right,#FF8030_0%,#383BFE_60%)]"
             type="button"
+            onClick={() =>
+              navigate("/setup/floop-other-website", {
+                state: { from: "/dashboard" },
+              })
+            }
           >
             Give feedback to others
           </Button>
@@ -46,7 +55,7 @@ const Given = () => {
                   whileHover={{ y: -6 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <Card review={review} />
+                  <Card review={review} navigateTo="review" />
                 </motion.div>
               ))}
             </div>

@@ -9,22 +9,47 @@ import { useNavigate } from "react-router";
 // components
 import { toast } from "sonner";
 
-const Card = ({ review }) => {
+const Card = ({ review, navigateTo }) => {
   // hooks
   const navigate = useNavigate();
 
   // functions
   const handleCopyLink = async () => {
-    await navigator.clipboard.writeText(`${review.reviewLink}`);
-    toast.success("Link copied to Clipboard!");
+    if (navigateTo === "feedbackview") {
+      await navigator.clipboard.writeText(`${review.reviewLink}`);
+      toast.success("Link copied to Clipboard!");
+    } else {
+      const link = review.reviewLink.replace("review", "feedbackview");
+      await navigator.clipboard.writeText(link);
+      toast.success("Link copied to Clipboard!");
+    }
+  };
+
+  const handleCardClick = () => {
+    if (navigateTo === "feedbackview") {
+      const feedbackViewLink = review.reviewLink.replace(
+        "review",
+        "dashboard/feedbackview",
+      );
+      navigate(feedbackViewLink);
+    } else {
+      const reviewLink = review.reviewLink.replace(
+        "review",
+        "dashboard/review",
+      );
+      navigate(reviewLink);
+    }
   };
 
   return (
-    <div className="w-80 h-100 bg-background hover:bg-background/30 rounded-2xl flex flex-col overflow-hidden border border-border cursor-pointer">
+    <div
+      className="w-80 h-100 bg-background hover:bg-background/30 rounded-2xl flex flex-col overflow-hidden border border-border cursor-pointer"
+      onClick={handleCardClick}
+    >
       <img
         src={review.portfolio.portfolioImage}
         alt="Preview"
-        className="w-full h-3/5 object-contain"
+        className="w-full h-3/5 object-cover"
       />
       <div className="w-full flex-1 p-5 flex flex-col gap-2">
         <h1 className="text-md text-black">{review.reviewerDisplayName}</h1>

@@ -2,7 +2,7 @@
 import axios from "axios";
 import { api } from "@/api";
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useOutletContext } from "react-router";
 
 // components
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,10 @@ import Globe from "@/assets/globe.svg";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 
-const RoleSelector = ({ setFormData, setCurrentStep }) => {
+const RoleSelector = () => {
   // hooks
   const navigate = useNavigate();
+  const { formData, setFormData } = useOutletContext();
 
   // states
   const [loading, setLoading] = useState(false);
@@ -22,9 +23,9 @@ const RoleSelector = ({ setFormData, setCurrentStep }) => {
   // functions
   const handleSelect = async (step) => {
     const role =
-      step === "floop_your_website"
+      step === "floop-your-website"
         ? "reviewee"
-        : step === "floop_other_website"
+        : step === "floop-other-website"
           ? "reviewer"
           : "";
 
@@ -40,7 +41,7 @@ const RoleSelector = ({ setFormData, setCurrentStep }) => {
         ...prev,
         role: [...new Set([...prev.role, role])],
       }));
-      setCurrentStep(step);
+      navigate(`/setup/${step}`);
     } catch (err) {
       console.log("Updating role failed", err);
       if (axios.isAxiosError(err)) {
@@ -58,7 +59,7 @@ const RoleSelector = ({ setFormData, setCurrentStep }) => {
       <Button
         className="w-max bg-background text-black rounded-full py-5 cursor-pointer text-xs flex justify-between border border-border mr-auto hover:bg-foreground/50"
         type="button"
-        onClick={() => setCurrentStep("user_details")}
+        onClick={() => navigate("/setup/user-details")}
       >
         <span className="w-4 h-4 rounded-full bg-foreground flex items-center justify-center ">
           <ArrowLeft className="w-3! h-3!" strokeWidth={2} />
@@ -70,7 +71,7 @@ const RoleSelector = ({ setFormData, setCurrentStep }) => {
       </h1>
       <div
         className="w-full h-40 bg-primary rounded-2xl flex flex-col p-6 text-white justify-between items-center gap-3 cursor-pointer hover:bg-primary/90"
-        onClick={() => handleSelect("floop_your_website")}
+        onClick={() => handleSelect("floop-your-website")}
         type="button"
       >
         <img src={Upload} alt="Upload" className="w-7 h-7" />
@@ -83,7 +84,7 @@ const RoleSelector = ({ setFormData, setCurrentStep }) => {
       </div>
       <div
         className="w-full h-40 bg-[#FF8030] rounded-2xl flex flex-col p-6 text-white justify-between items-center gap-3 cursor-pointer hover:bg-[#FF8030]/90"
-        onClick={() => handleSelect("floop_other_website")}
+        onClick={() => handleSelect("floop-other-website")}
       >
         <img src={Globe} alt="Upload" className="w-7 h-7" />
         <span className="w-full text-center flex flex-col gap-1">

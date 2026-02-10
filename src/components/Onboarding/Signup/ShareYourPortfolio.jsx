@@ -59,7 +59,7 @@ const ShareYourPortfolio = ({
         accessType: formData.accessType,
       });
       await navigator.clipboard.writeText(
-        `${BASE_URL_CLIENT}/${formData.reviewAccessToken}`,
+        `${BASE_URL_CLIENT}/review/${formData.reviewAccessToken}`,
       );
       toast.success("Link copied to clipboard");
       navigate("/dashboard");

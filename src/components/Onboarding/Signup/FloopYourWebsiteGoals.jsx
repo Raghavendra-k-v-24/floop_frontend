@@ -2,6 +2,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { api } from "@/api";
+import { useNavigate, useOutletContext } from "react-router";
 
 // components
 import { Button } from "@/components/ui/button";
@@ -13,10 +14,14 @@ import { toast } from "sonner";
 import { X } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 
-const FloopYourWebsiteGoals = ({ formData, setFormData, setCurrentStep }) => {
+const FloopYourWebsiteGoals = () => {
+  // hooks
+  const navigate = useNavigate();
+  const { formData, setFormData } = useOutletContext();
+
   //states
   const [goals, setGoals] = useState();
-  const [dialogOpen, setDialogOpen] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   //functions
@@ -77,7 +82,7 @@ const FloopYourWebsiteGoals = ({ formData, setFormData, setCurrentStep }) => {
         <Button
           className="w-max bg-background text-black rounded-full py-5 cursor-pointer text-xs flex justify-between border border-border mr-auto hover:bg-foreground/50"
           type="button"
-          onClick={() => setCurrentStep("floop_your_website")}
+          onClick={() => navigate("/setup/floop-your-website")}
         >
           <span className="w-4 h-4 rounded-full bg-foreground flex items-center justify-center ">
             <ArrowLeft className="w-3! h-3!" strokeWidth={2} />

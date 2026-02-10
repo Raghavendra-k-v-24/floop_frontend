@@ -2,6 +2,7 @@
 import axios from "axios";
 import { api } from "@/api";
 import { useState } from "react";
+import { useNavigate, useOutletContext, useLocation } from "react-router";
 
 // components
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,12 @@ import CustomInput from "../../common/CustomInput";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 
-const FloopYourWebsite = ({ formData, setFormData, setCurrentStep }) => {
+const FloopYourWebsite = () => {
+  // hooks
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { formData, setFormData } = useOutletContext();
+
   // states
   const [loading, setLoading] = useState(false);
 
@@ -22,6 +28,14 @@ const FloopYourWebsite = ({ formData, setFormData, setCurrentStep }) => {
       ...prev,
       [id]: value,
     }));
+  };
+
+  const handleBack = () => {
+    if (location.state?.from) {
+      navigate(location.state.from);
+    } else {
+      navigate("/setup/role-selector");
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -65,7 +79,7 @@ const FloopYourWebsite = ({ formData, setFormData, setCurrentStep }) => {
         reviewAccessToken: accessToken,
       }));
 
-      setCurrentStep("floop_your_website_goals");
+      navigate("/setup/goals");
     } catch (err) {
       console.log("Portfolio or review creating failed", err);
       if (axios.isAxiosError(err)) {
@@ -87,7 +101,7 @@ const FloopYourWebsite = ({ formData, setFormData, setCurrentStep }) => {
       <Button
         className="w-max bg-background text-black rounded-full py-5 cursor-pointer text-xs flex justify-between border border-border mr-auto hover:bg-foreground/50"
         type="button"
-        onClick={() => setCurrentStep("role_selector")}
+        onClick={handleBack}
       >
         <span className="w-4 h-4 rounded-full bg-foreground flex items-center justify-center ">
           <ArrowLeft className="w-3! h-3!" strokeWidth={2} />

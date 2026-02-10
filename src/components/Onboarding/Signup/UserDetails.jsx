@@ -2,6 +2,7 @@
 import axios from "axios";
 import { api } from "@/api";
 import { useState } from "react";
+import { useNavigate, useOutletContext } from "react-router-dom";
 
 // components
 import CustomInput from "../../common/CustomInput";
@@ -16,7 +17,10 @@ import { toast } from "sonner";
 import CustomInputGroup from "../../common/CustomInputGroup";
 import { Spinner } from "@/components/ui/spinner";
 
-const UserDetails = ({ formData, setFormData, setCurrentStep }) => {
+const UserDetails = () => {
+  // hooks
+  const navigate = useNavigate();
+  const { formData, setFormData } = useOutletContext();
   // states
   const [loading, setLoading] = useState(false);
 
@@ -74,7 +78,7 @@ const UserDetails = ({ formData, setFormData, setCurrentStep }) => {
 
       const token = response.data.token;
       localStorage.setItem("auth_token", token);
-      setCurrentStep("role_selector");
+      navigate("/setup/role-selector");
     } catch (err) {
       console.log("Signing up failed", err);
       if (axios.isAxiosError(err)) {
