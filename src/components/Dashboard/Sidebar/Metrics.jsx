@@ -29,7 +29,7 @@ const Metrics = () => {
               : allReviews.given?.reviewCount}
           </span>
           <span className="text-xs text-secondary font-semibold text-center">
-            Total reviews received
+            Total reviews {tab === "received" ? "received" : "given"}
           </span>
         </div>
         <div className="w-full flex-1 flex flex-col justify-center items-center gap-1 px-5">
@@ -39,7 +39,7 @@ const Metrics = () => {
               : allReviews.given?.commentCount}
           </span>
           <span className="text-xs text-secondary font-semibold text-center">
-            Total comments received
+            Total comments {tab === "received" ? "received" : "given"}
           </span>
         </div>
       </div>
