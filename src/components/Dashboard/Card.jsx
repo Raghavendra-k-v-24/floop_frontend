@@ -26,19 +26,14 @@ const Card = ({ review, navigateTo }) => {
   };
 
   const handleCardClick = () => {
-    if (navigateTo === "feedbackview") {
-      const feedbackViewLink = review.reviewLink.replace(
-        "review",
-        "dashboard/feedbackview",
-      );
-      navigate(feedbackViewLink);
-    } else {
-      const reviewLink = review.reviewLink.replace(
-        "review",
-        "dashboard/review",
-      );
-      navigate(reviewLink);
-    }
+    const url = new URL(review.reviewLink);
+    const id = url.pathname.split("/").pop();
+
+    navigate(
+      navigateTo === "feedbackview"
+        ? `/dashboard/feedbackview/${id}`
+        : `/dashboard/review/${id}`,
+    );
   };
 
   return (
