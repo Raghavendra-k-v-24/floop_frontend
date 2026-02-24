@@ -21,7 +21,7 @@ const Activity = () => {
   const [allActivity, setallActivity] = useState({});
 
   // constants
-  const reviewId = window.location.pathname.split("/").pop();
+  const accessToken = window.location.pathname.split("/").pop();
   const hasActivity = Object.values(allActivity).some((a) => a.length);
 
   const groupLabels = {
@@ -34,11 +34,11 @@ const Activity = () => {
   // functions
   useEffect(() => {
     const getActivity = async () => {
-      const response = await api.get(`/api/review/${reviewId}/activity`);
+      const response = await api.get(`/api/review/${accessToken}/activity`);
       setallActivity(response.data);
     };
     getActivity();
-  }, [reviewId]);
+  }, [accessToken]);
 
   return (
     <div className="w-full h-max flex flex-col gap-3">
